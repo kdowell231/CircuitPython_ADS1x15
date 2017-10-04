@@ -27,7 +27,7 @@ This is easily achieved by downloading
 Usage Example
 =============
 
-TODO
+TODO - add examples here
 
 Contributing
 ============
