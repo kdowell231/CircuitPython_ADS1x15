@@ -47,6 +47,14 @@ ADS1x15_CONFIG_GAIN = {
     8:   0x0800,
     16:  0x0A00
 }
+ADS1x15_PGA_RANGE = {
+    2/3: 6.144,
+    1:   4.096,
+    2:   2.048,
+    4:   1.024,
+    8:   0.512,
+    16:  0.256
+}
 ADS1x15_CONFIG_MODE_CONTINUOUS  = 0x0000
 ADS1x15_CONFIG_MODE_SINGLE      = 0x0100
 # Mapping of data/sample rate to config register values for ADS1015 (faster).
@@ -91,6 +99,8 @@ class ADS1x15(object):
             import busio
             i2c = busio.I2C(board.SCL, board.SDA)
         self.i2c_device = I2CDevice(i2c, address)
+
+        self.bits = None
 
         # if i2c is None:
         #     import Adafruit_GPIO.I2C as I2C
@@ -221,6 +231,12 @@ class ADS1x15(object):
         # Perform a single shot read and set the mux value to the channel plus
         # the highest bit (bit 3) set.
         return self._read(channel + 0x04, gain, data_rate, ADS1x15_CONFIG_MODE_SINGLE)
+
+    def read_volts(self, channel, gain=1, data_rate=None):
+        assert 0 <= channel <= 3, 'Channel must be a value within 0-3!'
+        raw = self.read_adc(channel, gain, data_rate)
+        volts = raw * (ADS1x15_PGA_RANGE[gain] / (2**(self.bits-1) - 1))
+        return volts
 
     def read_adc_difference(self, differential, gain=1, data_rate=None):
         """Read the difference between two ADC channels and return the ADC value
@@ -383,6 +399,7 @@ class ADS1015(ADS1x15):
 
     def __init__(self, *args, **kwargs):
         super(ADS1015, self).__init__(*args, **kwargs)
+        self.bits = 12
 
     def _data_rate_default(self):
         # Default from datasheet page 19, config register DR bit default.
