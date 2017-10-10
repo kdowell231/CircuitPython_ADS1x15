@@ -28,6 +28,7 @@ Usage Example
 =============
 
 .. code-block:: python
+
   # import the module
   import adafruit_CircuitPython_ADS1x15
   # create the instance
