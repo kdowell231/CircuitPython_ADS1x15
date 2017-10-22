@@ -89,18 +89,37 @@ ADS1x15_CONFIG_COMP_QUE = {
 ADS1x15_CONFIG_COMP_QUE_DISABLE = 0x0003
 
 
+class ADC_Channel(object):
+    def __init__(self, adc, channel):
+        self._adc = adc
+        self._channel = channel
+        self._value = None
+        self._volts = None
+
+    @property
+    def value(self, ):
+        self._value = self._adc._read_channel(self._channel)
+        return self._value
+
+    @property
+    def volts(self, ):
+        self._volts = self._adc._read_channel_volts(self._channel)
+        return self._volts
+
 class ADS1x15(object):
     """Base functionality for ADS1x15 analog to digital converters."""
 
-    def __init__(self, address=ADS1x15_DEFAULT_ADDRESS, i2c=None, **kwargs):
+    def __init__(self, i2c, address=ADS1x15_DEFAULT_ADDRESS, **kwargs):
         self.buf = bytearray(3)
-        if i2c is None:
-            import board
-            import busio
-            i2c = busio.I2C(board.SCL, board.SDA)
         self.i2c_device = I2CDevice(i2c, address)
-
         self.bits = None
+        self._channels = [ADC_Channel(self, 0),
+                         ADC_Channel(self, 1),
+                         ADC_Channel(self, 2),
+                         ADC_Channel(self, 3)]
+
+    def __getitem__(self, key):
+        return self._channels[key]
 
     def _data_rate_default(self):
         """Retrieve the default data rate for this ADC (in samples per second).
@@ -120,6 +139,18 @@ class ADS1x15(object):
     def _conversion_value(self, low, high):
         """Subclasses should override this function that takes the low and high
         byte of a conversion result and returns a signed integer value.
+        """
+        raise NotImplementedError('Subclass must implement _conversion_value function!')
+
+    def _read_channel(self, channel):
+        """Subclasses should override this function to return a value for the
+        requested channels as a signed integer value.
+        """
+        raise NotImplementedError('Subclass must implement _conversion_value function!')
+
+    def _read_channel_volts(self, channel):
+        """Subclasses should override this function to return a value for the
+        requested channels as a float value.
         """
         raise NotImplementedError('Subclass must implement _conversion_value function!')
 
@@ -381,51 +412,51 @@ class ADS1x15(object):
             i2c.read_into(self.buf, start=1)
         return self._conversion_value(self.buf[2], self.buf[1])
 
-class ADS1115(ADS1x15):
-    """ADS1115 16-bit analog to digital converter instance."""
-
-    def __init__(self, *args, **kwargs):
-        super(ADS1115, self).__init__(*args, **kwargs)
-        self.bits = 16
-
-    def _data_rate_default(self):
-        # Default from datasheet page 16, config register DR bit default.
-        return 128
-
-    def _data_rate_config(self, data_rate):
-        if data_rate not in ADS1115_CONFIG_DR:
-            raise ValueError('Data rate must be one of: 8, 16, 32, 64, 128, 250, 475, 860')
-        return ADS1115_CONFIG_DR[data_rate]
-
-    def _conversion_value(self, low, high):
-        # Convert to 16-bit signed value.
-        value = ((high & 0xFF) << 8) | (low & 0xFF)
-        # Check for sign bit and turn into a negative value if set.
-        if value & 0x8000 != 0:
-            value -= 1 << 16
-        return value
-
-
-class ADS1015(ADS1x15):
-    """ADS1015 12-bit analog to digital converter instance."""
-
-    def __init__(self, *args, **kwargs):
-        super(ADS1015, self).__init__(*args, **kwargs)
-        self.bits = 12
-
-    def _data_rate_default(self):
-        # Default from datasheet page 19, config register DR bit default.
-        return 1600
-
-    def _data_rate_config(self, data_rate):
-        if data_rate not in ADS1015_CONFIG_DR:
-            raise ValueError('Data rate must be one of: 128, 250, 490, 920, 1600, 2400, 3300')
-        return ADS1015_CONFIG_DR[data_rate]
-
-    def _conversion_value(self, low, high):
-        # Convert to 12-bit signed value.
-        value = ((high & 0xFF) << 4) | ((low & 0xFF) >> 4)
-        # Check for sign bit and turn into a negative value if set.
-        if value & 0x800 != 0:
-            value -= 1 << 12
-        return value
+# class ADS1115(ADS1x15):
+#     """ADS1115 16-bit analog to digital converter instance."""
+#
+#     def __init__(self, *args, **kwargs):
+#         super(ADS1115, self).__init__(*args, **kwargs)
+#         self.bits = 16
+#
+#     def _data_rate_default(self):
+#         # Default from datasheet page 16, config register DR bit default.
+#         return 128
+#
+#     def _data_rate_config(self, data_rate):
+#         if data_rate not in ADS1115_CONFIG_DR:
+#             raise ValueError('Data rate must be one of: 8, 16, 32, 64, 128, 250, 475, 860')
+#         return ADS1115_CONFIG_DR[data_rate]
+#
+#     def _conversion_value(self, low, high):
+#         # Convert to 16-bit signed value.
+#         value = ((high & 0xFF) << 8) | (low & 0xFF)
+#         # Check for sign bit and turn into a negative value if set.
+#         if value & 0x8000 != 0:
+#             value -= 1 << 16
+#         return value
+#
+#
+# class ADS1015(ADS1x15):
+#     """ADS1015 12-bit analog to digital converter instance."""
+#
+#     def __init__(self, *args, **kwargs):
+#         super(ADS1015, self).__init__(*args, **kwargs)
+#         self.bits = 12
+#
+#     def _data_rate_default(self):
+#         # Default from datasheet page 19, config register DR bit default.
+#         return 1600
+#
+#     def _data_rate_config(self, data_rate):
+#         if data_rate not in ADS1015_CONFIG_DR:
+#             raise ValueError('Data rate must be one of: 128, 250, 490, 920, 1600, 2400, 3300')
+#         return ADS1015_CONFIG_DR[data_rate]
+#
+#     def _conversion_value(self, low, high):
+#         # Convert to 12-bit signed value.
+#         value = ((high & 0xFF) << 4) | ((low & 0xFF) >> 4)
+#         # Check for sign bit and turn into a negative value if set.
+#         if value & 0x800 != 0:
+#             value -= 1 << 12
+#         return value
