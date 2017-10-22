@@ -34,9 +34,13 @@ Single Ended
   import board
   import busio
   i2c = busio.I2C(board.SCL, board.SDA)
-  from adafruit_ada1x15.single_ended import ADS1015
-  adc = ADS1015(i2c)
+  from adafruit_ada1x15.single_ended import ADS1115
+  # basic usage
+  adc = ADS1115(i2c)
   adc.read_adc(0)
+  # using value property of a specific channel
+  chan0 = adc[0]
+  chan0.value
 
 
 Contributing
