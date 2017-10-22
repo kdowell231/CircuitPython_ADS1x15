@@ -18,7 +18,6 @@ Dependencies
 This driver depends on:
 
 * `Adafruit CircuitPython <https://github.com/adafruit/circuitpython>`_
-* `Bus Device <https://github.com/adafruit/Adafruit_CircuitPython_BusDevice>`_
 
 Please ensure all dependencies are available on the CircuitPython filesystem.
 This is easily achieved by downloading
@@ -27,16 +26,7 @@ This is easily achieved by downloading
 Usage Example
 =============
 
-.. code-block:: python
-
-  # import the module
-  import adafruit_CircuitPython_ADS1x15
-  # create the instance
-  adc = adafruit_CircuitPython_ADS1x15.ADS1015()
-  # raw ADC value
-  adc.read_adc(0)
-  # or reading in volts
-  adc.read_volts(0)
+  TODO
 
 Contributing
 ============

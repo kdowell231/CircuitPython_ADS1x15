@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """
-`adafruit_CircuitPython_ADS1x15`
+`adafruit__ads1x15`
 ====================================================
 
 CircuitPython driver for ADS1015/1115 ADCs.
