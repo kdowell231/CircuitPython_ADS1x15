@@ -26,7 +26,18 @@ This is easily achieved by downloading
 Usage Example
 =============
 
-  TODO
+Single Ended
+------------
+
+.. code-block:: python
+
+  import board
+  import busio
+  i2c = busio.I2C(board.SCL, board.SDA)
+  from adafruit_ada1x15.single_ended import ADS1015
+  adc = ADS1015(i2c)
+  adc.read_adc(0)
+
 
 Contributing
 ============

@@ -1,4 +1,4 @@
-from adafruit_ads1x15 import *
+from adafruit_ads1x15.adafruit_ads1x15 import *
 
 class ADS1015(ADS1x15):
     def __init__():
