@@ -1,10 +1,44 @@
-from adafruit_ads1x15.adafruit_ads1x15 import *
+from .adafruit_ads1x15 import *
 
-class ADS1015(ADS1x15):
+class ADS1x15_SingleEnded(ADS1x15):
+
+    def __getitem__(self, key):
+        return self._channels[key]
+
+    def read_adc(self, channel, gain=1, data_rate=None):
+        """Read a single ADC channel and return the ADC value as a signed integer
+        result.  Channel must be a value within 0-3.
+        """
+        assert 0 <= channel <= 3, 'Channel must be a value within 0-3!'
+        # Perform a single shot read and set the mux value to the channel plus
+        # the highest bit (bit 3) set.
+        return self._read(channel + 0x04, gain, data_rate, ADS1x15_CONFIG_MODE_SINGLE)
+
+    def read_volts(self, channel, gain=1, data_rate=None):
+        """Read a single ADC channel and return the voltage value as a floating point
+        result.  Channel must be a value within 0-3.
+        """
+        assert 0 <= channel <= 3, 'Channel must be a value within 0-3!'
+        raw = self.read_adc(channel, gain, data_rate)
+        volts = raw * (ADS1x15_PGA_RANGE[gain] / (2**(self.bits-1) - 1))
+        return volts
+
+    def start_adc(self, channel, gain=1, data_rate=None):
+        """Start continuous ADC conversions on the specified channel (0-3). Will
+        return an initial conversion result, then call the get_last_result()
+        function to read the most recent conversion result. Call stop_adc() to
+        stop conversions.
+        """
+        assert 0 <= channel <= 3, 'Channel must be a value within 0-3!'
+        # Start continuous reads and set the mux value to the channel plus
+        # the highest bit (bit 3) set.
+        return self._read(channel + 0x04, gain, data_rate, ADS1x15_CONFIG_MODE_CONTINUOUS)
+
+class ADS1015(ADS1x15_SingleEnded):
     def __init__():
         pass
 
-class ADS1115(ADS1x15):
+class ADS1115(ADS1x15_SingleEnded):
     """ADS1115 16-bit analog to digital converter instance."""
 
     def __init__(self, *args, **kwargs):

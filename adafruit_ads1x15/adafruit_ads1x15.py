@@ -87,24 +87,25 @@ ADS1x15_CONFIG_COMP_QUE = {
     4: 0x0002
 }
 ADS1x15_CONFIG_COMP_QUE_DISABLE = 0x0003
-
+ADS1x15_DIFF_CHANNELS = {
+    (0,1): 0,
+    (0,3): 1,
+    (1,3): 2,
+    (2,3): 3
+}
 
 class ADC_Channel(object):
     def __init__(self, adc, channel):
         self._adc = adc
         self._channel = channel
-        self._value = None
-        self._volts = None
 
     @property
     def value(self, ):
-        self._value = self._adc._read_channel(self._channel)
-        return self._value
+        return self._adc._read_channel(self._channel)
 
     @property
     def volts(self, ):
-        self._volts = self._adc._read_channel_volts(self._channel)
-        return self._volts
+        return self._adc._read_channel_volts(self._channel)
 
 class ADS1x15(object):
     """Base functionality for ADS1x15 analog to digital converters."""
@@ -118,8 +119,8 @@ class ADS1x15(object):
                          ADC_Channel(self, 2),
                          ADC_Channel(self, 3)]
 
-    def __getitem__(self, key):
-        return self._channels[key]
+    # def __getitem__(self, key):
+    #     return self._channels[key]
 
     def _data_rate_default(self):
         """Retrieve the default data rate for this ADC (in samples per second).
@@ -146,13 +147,13 @@ class ADS1x15(object):
         """Subclasses should override this function to return a value for the
         requested channels as a signed integer value.
         """
-        raise NotImplementedError('Subclass must implement _conversion_value function!')
+        raise NotImplementedError('Subclass must implement _read_channel function!')
 
     def _read_channel_volts(self, channel):
         """Subclasses should override this function to return a value for the
         requested channels as a float value.
         """
-        raise NotImplementedError('Subclass must implement _conversion_value function!')
+        raise NotImplementedError('Subclass must implement _read_channel_volts function!')
 
     def _read(self, mux, gain, data_rate, mode):
         """Perform an ADC read with the provided mux, gain, data_rate, and mode
@@ -254,77 +255,77 @@ class ADS1x15(object):
     #         i2c.read_into(self.buf, start=1)
     #     return self._conversion_value(self.buf[2], self.buf[1])
 
-    def read_adc(self, channel, gain=1, data_rate=None):
-        """Read a single ADC channel and return the ADC value as a signed integer
-        result.  Channel must be a value within 0-3.
-        """
-        assert 0 <= channel <= 3, 'Channel must be a value within 0-3!'
-        # Perform a single shot read and set the mux value to the channel plus
-        # the highest bit (bit 3) set.
-        return self._read(channel + 0x04, gain, data_rate, ADS1x15_CONFIG_MODE_SINGLE)
+    # def read_adc(self, channel, gain=1, data_rate=None):
+    #     """Read a single ADC channel and return the ADC value as a signed integer
+    #     result.  Channel must be a value within 0-3.
+    #     """
+    #     assert 0 <= channel <= 3, 'Channel must be a value within 0-3!'
+    #     # Perform a single shot read and set the mux value to the channel plus
+    #     # the highest bit (bit 3) set.
+    #     return self._read(channel + 0x04, gain, data_rate, ADS1x15_CONFIG_MODE_SINGLE)
+    #
+    # def read_volts(self, channel, gain=1, data_rate=None):
+    #     """Read a single ADC channel and return the voltage value as a floating point
+    #     result.  Channel must be a value within 0-3.
+    #     """
+    #     assert 0 <= channel <= 3, 'Channel must be a value within 0-3!'
+    #     raw = self.read_adc(channel, gain, data_rate)
+    #     volts = raw * (ADS1x15_PGA_RANGE[gain] / (2**(self.bits-1) - 1))
+    #     return volts
 
-    def read_volts(self, channel, gain=1, data_rate=None):
-        """Read a single ADC channel and return the voltage value as a floating point
-        result.  Channel must be a value within 0-3.
-        """
-        assert 0 <= channel <= 3, 'Channel must be a value within 0-3!'
-        raw = self.read_adc(channel, gain, data_rate)
-        volts = raw * (ADS1x15_PGA_RANGE[gain] / (2**(self.bits-1) - 1))
-        return volts
+    # def read_adc_difference(self, differential, gain=1, data_rate=None):
+    #     """Read the difference between two ADC channels and return the ADC value
+    #     as a signed integer result.  Differential must be one of:
+    #       - 0 = Channel 0 minus channel 1
+    #       - 1 = Channel 0 minus channel 3
+    #       - 2 = Channel 1 minus channel 3
+    #       - 3 = Channel 2 minus channel 3
+    #     """
+    #     assert 0 <= differential <= 3, 'Differential must be a value within 0-3!'
+    #     # Perform a single shot read using the provided differential value
+    #     # as the mux value (which will enable differential mode).
+    #     return self._read(differential, gain, data_rate, ADS1x15_CONFIG_MODE_SINGLE)
+    #
+    # def read_volts_difference(self, differential, gain=1, data_rate=None):
+    #     """Read the difference between two ADC channels and return the voltage value
+    #     as a floating point result.  Differential must be one of:
+    #       - 0 = Channel 0 minus channel 1
+    #       - 1 = Channel 0 minus channel 3
+    #       - 2 = Channel 1 minus channel 3
+    #       - 3 = Channel 2 minus channel 3
+    #     """
+    #     assert 0 <= differential <= 3, 'Differential must be a value within 0-3!'
+    #     raw = self.read_adc_difference(differential, gain, data_rate)
+    #     #volts = raw * (ADS1x15_PGA_RANGE[gain] / (2**(self.bits) - 1))
+    #     volts = raw * (ADS1x15_PGA_RANGE[gain] / (2**(self.bits-1) - 1))
+    #     return volts
 
-    def read_adc_difference(self, differential, gain=1, data_rate=None):
-        """Read the difference between two ADC channels and return the ADC value
-        as a signed integer result.  Differential must be one of:
-          - 0 = Channel 0 minus channel 1
-          - 1 = Channel 0 minus channel 3
-          - 2 = Channel 1 minus channel 3
-          - 3 = Channel 2 minus channel 3
-        """
-        assert 0 <= differential <= 3, 'Differential must be a value within 0-3!'
-        # Perform a single shot read using the provided differential value
-        # as the mux value (which will enable differential mode).
-        return self._read(differential, gain, data_rate, ADS1x15_CONFIG_MODE_SINGLE)
+    # def start_adc(self, channel, gain=1, data_rate=None):
+    #     """Start continuous ADC conversions on the specified channel (0-3). Will
+    #     return an initial conversion result, then call the get_last_result()
+    #     function to read the most recent conversion result. Call stop_adc() to
+    #     stop conversions.
+    #     """
+    #     assert 0 <= channel <= 3, 'Channel must be a value within 0-3!'
+    #     # Start continuous reads and set the mux value to the channel plus
+    #     # the highest bit (bit 3) set.
+    #     return self._read(channel + 0x04, gain, data_rate, ADS1x15_CONFIG_MODE_CONTINUOUS)
 
-    def read_volts_difference(self, differential, gain=1, data_rate=None):
-        """Read the difference between two ADC channels and return the voltage value
-        as a floating point result.  Differential must be one of:
-          - 0 = Channel 0 minus channel 1
-          - 1 = Channel 0 minus channel 3
-          - 2 = Channel 1 minus channel 3
-          - 3 = Channel 2 minus channel 3
-        """
-        assert 0 <= differential <= 3, 'Differential must be a value within 0-3!'
-        raw = self.read_adc_difference(differential, gain, data_rate)
-        #volts = raw * (ADS1x15_PGA_RANGE[gain] / (2**(self.bits) - 1))
-        volts = raw * (ADS1x15_PGA_RANGE[gain] / (2**(self.bits-1) - 1))
-        return volts
-
-    def start_adc(self, channel, gain=1, data_rate=None):
-        """Start continuous ADC conversions on the specified channel (0-3). Will
-        return an initial conversion result, then call the get_last_result()
-        function to read the most recent conversion result. Call stop_adc() to
-        stop conversions.
-        """
-        assert 0 <= channel <= 3, 'Channel must be a value within 0-3!'
-        # Start continuous reads and set the mux value to the channel plus
-        # the highest bit (bit 3) set.
-        return self._read(channel + 0x04, gain, data_rate, ADS1x15_CONFIG_MODE_CONTINUOUS)
-
-    def start_adc_difference(self, differential, gain=1, data_rate=None):
-        """Start continuous ADC conversions between two ADC channels. Differential
-        must be one of:
-          - 0 = Channel 0 minus channel 1
-          - 1 = Channel 0 minus channel 3
-          - 2 = Channel 1 minus channel 3
-          - 3 = Channel 2 minus channel 3
-        Will return an initial conversion result, then call the get_last_result()
-        function continuously to read the most recent conversion result.  Call
-        stop_adc() to stop conversions.
-        """
-        assert 0 <= differential <= 3, 'Differential must be a value within 0-3!'
-        # Perform a single shot read using the provided differential value
-        # as the mux value (which will enable differential mode).
-        return self._read(differential, gain, data_rate, ADS1x15_CONFIG_MODE_CONTINUOUS)
+    # def start_adc_difference(self, differential, gain=1, data_rate=None):
+    #     """Start continuous ADC conversions between two ADC channels. Differential
+    #     must be one of:
+    #       - 0 = Channel 0 minus channel 1
+    #       - 1 = Channel 0 minus channel 3
+    #       - 2 = Channel 1 minus channel 3
+    #       - 3 = Channel 2 minus channel 3
+    #     Will return an initial conversion result, then call the get_last_result()
+    #     function continuously to read the most recent conversion result.  Call
+    #     stop_adc() to stop conversions.
+    #     """
+    #     assert 0 <= differential <= 3, 'Differential must be a value within 0-3!'
+    #     # Perform a single shot read using the provided differential value
+    #     # as the mux value (which will enable differential mode).
+    #     return self._read(differential, gain, data_rate, ADS1x15_CONFIG_MODE_CONTINUOUS)
 
     # def start_adc_comparator(self, channel, high_threshold, low_threshold,
     #                          gain=1, data_rate=None, active_low=True,
